@@ -1,28 +1,28 @@
 # 宝宝两岁生日快乐
 
-![](./assets/20190803/IMG_01.jpg)
+![](/assets/20190803/IMG_01.jpg)
 
-![](./assets/20190803/IMG_02.jpg)
+![](/assets/20190803/IMG_02.jpg)
 
-![](./assets/20190803/IMG_03.jpg)
+![](/assets/20190803/IMG_03.jpg)
 
-![](./assets/20190803/IMG_04.jpg)
+![](/assets/20190803/IMG_04.jpg)
 
-![](./assets/20190803/IMG_05.jpg)
+![](/assets/20190803/IMG_05.jpg)
 
-![](./assets/20190803/IMG_06.jpg)
+![](/assets/20190803/IMG_06.jpg)
 
-![](./assets/20190803/IMG_07.jpg)
+![](/assets/20190803/IMG_07.jpg)
 
-![](./assets/20190803/IMG_08.jpg)
+![](/assets/20190803/IMG_08.jpg)
 
-![](./assets/20190803/IMG_09.jpg)
+![](/assets/20190803/IMG_09.jpg)
 
-![](./assets/20190803/IMG_10.jpg)
+![](/assets/20190803/IMG_10.jpg)
 
-![](./assets/20190803/IMG_11.jpg)
+![](/assets/20190803/IMG_11.jpg)
 
-![](./assets/20190803/IMG_12.jpg)
+![](/assets/20190803/IMG_12.jpg)
 
 # Hello World
 
