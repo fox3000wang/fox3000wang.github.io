@@ -1,2 +1,1 @@
-# fox3000wang-github.io
-home page
+# wangzm.cn 的首页
