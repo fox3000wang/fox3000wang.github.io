@@ -31805,4 +31805,9 @@ module.exports = function (KEY, exec) {
 
 /***/ })
 
+<<<<<<< HEAD
 }]);
+=======
+}]);
+//# sourceMappingURL=vendor.1668893c.js.map
+>>>>>>> origin/master
