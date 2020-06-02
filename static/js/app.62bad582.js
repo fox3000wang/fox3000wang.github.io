@@ -128,8 +128,11 @@ var reducerHelper_1 = __webpack_require__(/*! ../utils/reducerHelper */ "8EKs");
 exports.appConfig = redux_actions_2.handleActions({}, {});
 exports.APP_READY = "APP_READY";
 var isReady = redux_actions_1.handleAction(exports.APP_READY, reducerHelper_1.returnPayload, false);
+exports.SET_VIST_INFO = "SET_VIST_INFO";
+var vitaInfo = redux_actions_1.handleAction(exports.SET_VIST_INFO, reducerHelper_1.returnPayload, null);
 var appDataReducer = redux_1.combineReducers({
-    isReady: isReady
+    isReady: isReady,
+    vitaInfo: vitaInfo
 });
 exports.default = appDataReducer;
 
@@ -209,6 +212,26 @@ exports.locals = {
 
 /***/ }),
 
+/***/ "KEQN":
+/*!**************************************************!*\
+  !*** ./src/note/ThePragmaticProgrammer/style.ts ***!
+  \**************************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var styled_components_1 = __webpack_require__(/*! styled-components */ "vOnD");
+exports.Background = styled_components_1.default.div.withConfig({
+  displayName: "style__Background",
+  componentId: "sc-1docd7z-0"
+})(["background:#fff;display:flex;flex-direction:column;font-size:0.2rem;line-height:0.2rem;height:100%;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0.5rem;"]);
+
+/***/ }),
+
 /***/ "KP1v":
 /*!*******************************!*\
   !*** ./src/container/App.tsx ***!
@@ -246,6 +269,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var React = __webpack_require__(/*! react */ "q1tI");
 var react_router_1 = __webpack_require__(/*! react-router */ "dtw8");
 var VitaPage_1 = __webpack_require__(/*! ./VitaPage */ "RJTA");
+var CSSPage_1 = __webpack_require__(/*! ./CSSPage */ "vFEi");
+var ThePragmaticProgrammer_1 = __webpack_require__(/*! ./../note/ThePragmaticProgrammer */ "mavY");
 
 var App = function (_React$Component) {
     (0, _inherits3.default)(App, _React$Component);
@@ -267,6 +292,8 @@ var App = function (_React$Component) {
                 React.createElement(
                     react_router_1.Switch,
                     null,
+                    React.createElement(react_router_1.Route, { path: "/tpp", component: ThePragmaticProgrammer_1.default }),
+                    React.createElement(react_router_1.Route, { path: "/css", component: CSSPage_1.default }),
                     React.createElement(react_router_1.Route, { path: "/", component: VitaPage_1.default })
                 )
             );
@@ -293,11 +320,16 @@ exports.default = App;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 __webpack_require__(/*! react-hot-loader/patch */ "87sv");
-var _ = __webpack_require__(/*! lodash */ "LvDl");
 var redux_1 = __webpack_require__(/*! redux */ "ANjH");
+var _ = __webpack_require__(/*! lodash */ "LvDl");
 var common = __webpack_require__(/*! ./common */ "Z+qe");
+var vita = __webpack_require__(/*! ./vita */ "UCTg");
+/**
+ * 模块和模块直接分离各自的action
+ */
 var actionList = {
-    common: common
+    common: common,
+    vita: vita
 };
 exports.mapAppActions = function (dispatch) {
     return {
@@ -307,6 +339,76 @@ exports.mapAppActions = function (dispatch) {
     };
 };
 exports.conbinedActions = actionList;
+exports.AppActions = actionList;
+
+/***/ }),
+
+/***/ "O8Oa":
+/*!*************************************!*\
+  !*** ./src/services/api-service.ts ***!
+  \*************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/// <reference path="../types/IApis.ts" />
+
+var _stringify = __webpack_require__(/*! babel-runtime/core-js/json/stringify */ "gDS+");
+
+var _stringify2 = _interopRequireDefault(_stringify);
+
+var _assign = __webpack_require__(/*! babel-runtime/core-js/object/assign */ "P2sY");
+
+var _assign2 = _interopRequireDefault(_assign);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var uuid_1 = __webpack_require__(/*! uuid */ "EcEN");
+var axios_1 = __webpack_require__(/*! axios */ "vDqi");
+var apiSchema = __webpack_require__(/*! ./api-schema */ "kwYQ");
+var TIMEOUT = 6000;
+/**
+ * 对axios请求进行包装，方便后面根据不同的配置，返回不同的ajax请求
+ * @param service {AxiosInstance} Axios实例(axios.create())
+ * @param api {Object} 请求的配置信息，包含path(要发送的地址)、method(请求类型))、data(所携带的信息)
+ */
+function makeService(service, api) {
+    var isMock = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+    var xRequestId = uuid_1.v1();
+    var responseType = api.onDownloadProgress ? { responseType: "blob" } : {};
+    // todo cache support and connect to redux state
+    return service.request((0, _assign2.default)({ url: api.path, method: api.method,
+        // data: api.payload,
+        body: (0, _stringify2.default)({ query: "{ data }" }), params: api.params || null, onUploadProgress: api.onUploadProgress || null, onDownloadProgress: api.onDownloadProgress || null, cancelToken: api.cancelToken || null, timeout: api.onUploadProgress || api.onDownloadProgress ? 0 : TIMEOUT,
+        // headers: {
+        //   "x-request-id": xRequestId,
+        //   ...service.defaults.headers,
+        //   ...(api.headers || {})
+        // },
+        //@ts-ignore
+        //注入 meta 信息方便在 interceptors 里面收集信息
+        metadata: {
+            name: api.name,
+            xRequestId: xRequestId
+        } }, responseType));
+}
+var service = axios_1.default.create({
+    // baseURL: "http://localhost/",
+    baseURL: window.origin,
+    headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        charset: "UTF-8"
+    }
+});
+function getVisaInfo(body) {
+    return makeService(service, apiSchema.getVisaInfo()(body));
+}
+exports.getVisaInfo = getVisaInfo;
 
 /***/ }),
 
@@ -351,10 +453,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var React = __webpack_require__(/*! react */ "q1tI");
 var react_redux_1 = __webpack_require__(/*! react-redux */ "/MKj");
 var action_1 = __webpack_require__(/*! ../../action */ "O3TY");
-var data_1 = __webpack_require__(/*! ./data */ "qNb/");
+var data = __webpack_require__(/*! ./data */ "qNb/");
 var style_1 = __webpack_require__(/*! ./style */ "y3Nn");
-function mapStateToProps() {
-  return {};
+var vita_1 = __webpack_require__(/*! ../../action/vita */ "UCTg");
+var api_service_1 = __webpack_require__(/*! ../../services/api-service */ "O8Oa");
+function mapStateToProps(state) {
+  var vitaInfo = state.appData.vitaInfo;
+
+  return { vitaInfo: vitaInfo };
 }
 function renderOther() {
   return React.createElement(
@@ -402,7 +508,7 @@ function renderOther() {
         React.createElement(
           style_1.Item,
           null,
-          "K.I.S.S DRY"
+          "DRY K.I.S.S. Keep Learning"
         )
       )
     ),
@@ -453,6 +559,24 @@ function renderOther() {
         React.createElement(
           style_1.Label,
           null,
+          "\u804C\u4E1A\u72B6\u51B5\uFF1A"
+        ),
+        React.createElement(
+          style_1.Item,
+          null,
+          "\u79BB\u804C\uFF0C\u53EF\u4E00\u5468\u5185\u5230\u5C97"
+        )
+      )
+    ),
+    React.createElement(
+      style_1.SubModule,
+      null,
+      React.createElement(
+        style_1.Content,
+        null,
+        React.createElement(
+          style_1.Label,
+          null,
           "\u8054\u7CFB\u65B9\u5F0F\uFF1A"
         ),
         React.createElement(
@@ -476,12 +600,7 @@ function renderOther() {
         React.createElement(
           style_1.Item,
           null,
-          "aws(wangzm.cn) \u767E\u5EA6\u4E91(wangzm.top)"
-        ),
-        React.createElement(
-          style_1.Label,
-          null,
-          "\u5907\u6848\uFF1A\u6842ICP\u590720000524\u53F7"
+          "aws(wangzm.cn) "
         )
       )
     )
@@ -504,13 +623,48 @@ var VitaPage = function (_React$Component) {
   }
 
   (0, _createClass3.default)(VitaPage, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var tech = data.tech,
+          subTech = data.subTech;
+
+      api_service_1.getVisaInfo().then(function (response) {
+        console.log(response);
+        var _response$data = response.data,
+            info = _response$data.info,
+            work = _response$data.work,
+            project = _response$data.project,
+            education = _response$data.education;
+
+        window.__STORE__.dispatch(vita_1.setVitaInfo({ info: info, work: work, project: project, education: education, tech: tech, subTech: subTech }));
+      }).catch(function () {
+        // 服务器忘记启动了就加载本地数据，不会翻车。
+        var info = data.info,
+            work = data.work,
+            project = data.project,
+            education = data.education;
+
+        window.__STORE__.dispatch(vita_1.setVitaInfo({ info: info, work: work, project: project, education: education, tech: tech, subTech: subTech }));
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
-      var _data_1$info = data_1.info,
-          name = _data_1$info.name,
-          position = _data_1$info.position,
-          sub = _data_1$info.sub,
-          intention = _data_1$info.intention;
+      var vitaInfo = this.props.vitaInfo;
+
+      if (!vitaInfo) {
+        return React.createElement("div", null);
+      }
+      var info = vitaInfo.info,
+          work = vitaInfo.work,
+          project = vitaInfo.project,
+          education = vitaInfo.education,
+          tech = vitaInfo.tech,
+          subTech = vitaInfo.subTech;
+      var name = info.name,
+          position = info.position,
+          intention = info.intention,
+          sub = info.sub;
 
       return React.createElement(
         style_1.Background,
@@ -564,13 +718,18 @@ var VitaPage = function (_React$Component) {
               style_1.Center,
               null,
               this.renderIntention(intention),
-              this.renderWork(),
-              this.renderProject(),
-              this.renderEducation(),
-              this.renderTech(),
-              this.renderSubTech(),
+              this.renderWork(work),
+              this.renderProject(project),
+              this.renderEducation(education),
+              this.renderTech(tech),
+              this.renderSubTech(subTech),
               renderOther()
             )
+          ),
+          React.createElement(
+            style_1.Foot,
+            null,
+            "\u6842ICP\u590720000524\u53F7"
           )
         )
       );
@@ -612,7 +771,7 @@ var VitaPage = function (_React$Component) {
     }
   }, {
     key: "renderWork",
-    value: function renderWork() {
+    value: function renderWork(work) {
       return React.createElement(
         style_1.Module,
         null,
@@ -626,7 +785,7 @@ var VitaPage = function (_React$Component) {
           ),
           React.createElement(style_1.Theline, null)
         ),
-        data_1.work.map(function (obj, idx) {
+        work.map(function (obj, idx) {
           return React.createElement(
             style_1.SubModule,
             { key: idx },
@@ -660,7 +819,7 @@ var VitaPage = function (_React$Component) {
     }
   }, {
     key: "renderProject",
-    value: function renderProject() {
+    value: function renderProject(project) {
       return React.createElement(
         style_1.Module,
         null,
@@ -674,7 +833,7 @@ var VitaPage = function (_React$Component) {
           ),
           React.createElement(style_1.Theline, null)
         ),
-        data_1.project.map(function (obj, idx) {
+        project.map(function (obj, idx) {
           return React.createElement(
             style_1.SubModule,
             { key: idx },
@@ -718,7 +877,7 @@ var VitaPage = function (_React$Component) {
     }
   }, {
     key: "renderEducation",
-    value: function renderEducation() {
+    value: function renderEducation(education) {
       return React.createElement(
         style_1.Module,
         null,
@@ -732,7 +891,7 @@ var VitaPage = function (_React$Component) {
           ),
           React.createElement(style_1.Theline, null)
         ),
-        data_1.education.map(function (obj, idx) {
+        education.map(function (obj, idx) {
           return React.createElement(
             style_1.SubModule,
             { key: idx },
@@ -760,7 +919,7 @@ var VitaPage = function (_React$Component) {
     }
   }, {
     key: "renderTech",
-    value: function renderTech() {
+    value: function renderTech(tech) {
       return React.createElement(
         style_1.Module,
         null,
@@ -774,7 +933,7 @@ var VitaPage = function (_React$Component) {
           ),
           React.createElement(style_1.Theline, null)
         ),
-        data_1.tech.map(function (obj, idx) {
+        tech.map(function (obj, idx) {
           return React.createElement(
             style_1.SubModule,
             { key: idx },
@@ -802,7 +961,7 @@ var VitaPage = function (_React$Component) {
     }
   }, {
     key: "renderSubTech",
-    value: function renderSubTech() {
+    value: function renderSubTech(subTech) {
       return React.createElement(
         style_1.Module,
         null,
@@ -816,7 +975,7 @@ var VitaPage = function (_React$Component) {
           ),
           React.createElement(style_1.Theline, null)
         ),
-        data_1.subTech.map(function (obj, idx) {
+        subTech.map(function (obj, idx) {
           return React.createElement(
             style_1.SubModule,
             { key: idx },
@@ -849,6 +1008,36 @@ var VitaPage = function (_React$Component) {
 }(React.Component);
 
 exports.default = react_redux_1.connect(mapStateToProps, action_1.mapAppActions)(VitaPage);
+
+/***/ }),
+
+/***/ "UCTg":
+/*!****************************!*\
+  !*** ./src/action/vita.ts ***!
+  \****************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var redux_actions_1 = __webpack_require__(/*! redux-actions */ "6SzI");
+var app_data_1 = __webpack_require__(/*! ../reducer/app-data */ "C8Si");
+exports.setVitaInfo = redux_actions_1.createAction(app_data_1.SET_VIST_INFO);
+
+/***/ }),
+
+/***/ "VLBZ":
+/*!*********************************!*\
+  !*** ./src/assets/vita/aws.png ***!
+  \*********************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports) {
+
+module.exports = "data:image/png;base64,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"
 
 /***/ }),
 
@@ -914,6 +1103,27 @@ exports.setIsReady = redux_actions_1.createAction(app_data_1.APP_READY);
 
 /***/ }),
 
+/***/ "Zfwi":
+/*!*********************************************!*\
+  !*** ./src/container/CSSPage/animation.tsx ***!
+  \*********************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var React = __webpack_require__(/*! react */ "q1tI");
+function animation() {
+    return React.createElement("div", null);
+}
+animation.displayName = "animation";
+exports.default = animation;
+
+/***/ }),
+
 /***/ "Zjyq":
 /*!*********************************!*\
   !*** ./src/assets/vita/es6.png ***!
@@ -923,6 +1133,506 @@ exports.setIsReady = redux_actions_1.createAction(app_data_1.APP_READY);
 /***/ (function(module, exports) {
 
 module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJ1BMVEUyMjD22FT+5Ff32FQoKi4UGyz02VOHfD2qmUbhzFNhWzZNSTPHt02I7fW4AAAE4klEQVRo3u1XQWvcRhQWRtvS+DQ7IOgtkoLsbXwZCQSBHPYg1cG+6LBq7DqXkagguIdgurimN4OpXV8S23WT4JNJW5pcinFwE3qpikND/1RH82a0M1rLl9JL0bt4d/z06Xtv3vfNrIH+ZRgdQAfQAXQAHUAH0AF0AB3A/xkAB0qQ+t+BhRAljWe0HAGAw0KJOhVbDJgUGoKFeA61qMYg1xgIfEx8h4VNVQAsGFCNgaOHLXKdk82Xb3/ek9+hgAxyNID+/ks1Xj2pqIb54FEaRWaUfli6pC4jn4MclygA/jhSI/6Tt3Xh9dDgYSbbbs3A36lShqu2CtD/ylCj9wcva2wM5cpaWTN4mPCU7VBj0ABgDCy8nkxWzPuyDdZtjrpkB/QaBu9Yom9qSxshPO+P+fcZqs1Bg0HMAMJPhurSsigZLySSI7qeQf8SPkcRL+FUTsFtvrriXsugd8gAzvnH0dtXMaOy5AEBko0Bj1zFoJfKKBECqsP3mfP0tWGeAQAWy2beEBMwODt+JgIjNFdlsgct2p9Plj0YJCu4xXk9cNEVDMyzQGqSaZD3sHcYkgD7RzMkgPT+C3VLphgQPJEzb9Ys6GhQqwkqmHXx1QwImgCsQyYFVco9eMwr+MxFLQzALHj6utwOHoKCzyuIS4quZsCIFRRZhYVFCeaplxNMsADA87yCxcGx40pL0hiwTrE+EhRWu8AHMSrdon6dZX3BK5hN07Utz52egzPpJy4iCF5mJFuOWw+Nfy4mbWimv7vTDG5IQ3nDBv+OkEJ6cSBbJnQg9HJqT2tBGsoqGxt/R2aubTlcupjcVOd9eJDTFi2YFUB+s1Zj/AsMciPrU9KqRg7gRxO6P1V0i481gRvLDmpnwPyAKo4Ul6yt+RwsmOlIeEw7A+532c7kjZV66BE8d7H7HSCs4qLFD1ZBe4NxzaFXItnWB2yfn/N/3PcaDEx1F6q5cfZTaewzBGV8jo2MEmkrRaAzuNgUsUXgDMXO0xfA1li0UQYEPHY6Ym7NvTLUtXAqJ9ELxfhifyDqNW1iJbWZBXykzG3S0IIljz8yOfSdv8GGj8mdhB8oPCHknzeChhaoUKNywBe5MxZdvMsfgiMq+5WzsabVqNwDZBlQ7zYBgHcwlACAm56o3QN8Uci8oP5QYdCvQM2NfNqRFICFA/h7VwAUvHF8/JDoR97CAFcf+pdvXEpxGMzDlgX8rcYHmG0RnUvEdKkMJtvoshGjgyQug4CGOfTgOABLX/SYa/a/Fzuj78JvuzL2CD8bPz9wct+BMfeQfwkScgs04GRu2A01yqMtjldsfgKYa3vHz/Zh7u0Cr8Nd4302GAuFWS1qNFbs7BKUG8WJ0BfKwSbN0WwMCuFNv1KNxj1PtT+hfdo/128RB61+wBjcarhP1VZ0pCe5qJ2B6/yoedRHmKKADkb6pYdewwDPq8lrh3zGyOOkSaCNAVP/8wlCvAEXCiasurKk1G5p4zgese0TMWIMguwHYUdmKmwd0VzePc1029UA/trVYotVjLIvH8WjKEqX9+xA3vP7g2/Sam2pdIPrLtsO5Dsnu5tf72WuqjHn5Fu2Nrl+G+o9HqliYo5QhAyrwIGm0uqy7gUhnQYomr9mcGUqhFqWcp/A7PcGJkxj3c++DqAD6AA6gA6gA+gAOoD/EOAf6XUFfSovNkcAAAAASUVORK5CYII="
+
+/***/ }),
+
+/***/ "a00I":
+/*!****************************************!*\
+  !*** ./src/container/CSSPage/style.ts ***!
+  \****************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var styled_components_1 = __webpack_require__(/*! styled-components */ "vOnD");
+var github = __webpack_require__(/*! ../../assets/vita/github.png */ "nLtH");
+/******************************************************************************
+ * 形状
+ */
+exports.ShapeBg = styled_components_1.default.div.withConfig({
+  displayName: "style__ShapeBg",
+  componentId: "sc-1vmx9ua-0"
+})(["display:flex;align-items:center;flex-wrap:wrap;background:#fff center right/2% 2% repeat fixed;padding:0.05rem;"]);
+var Shape = styled_components_1.default.div.withConfig({
+  displayName: "style__Shape",
+  componentId: "sc-1vmx9ua-1"
+})(["display:inline-block;width:1.6rem;height:1rem;border:0;margin:0.1rem;padding:0.1rem;background:#0a0;"]);
+var Quarter = styled_components_1.default(Shape).withConfig({
+  displayName: "style__Quarter",
+  componentId: "sc-1vmx9ua-2"
+})(["background:#fb3;"]);
+exports.QuarterEllipse1 = styled_components_1.default(Quarter).withConfig({
+  displayName: "style__QuarterEllipse1",
+  componentId: "sc-1vmx9ua-3"
+})(["border-radius:100% 0 0 0;"]);
+exports.QuarterEllipse2 = styled_components_1.default(Quarter).withConfig({
+  displayName: "style__QuarterEllipse2",
+  componentId: "sc-1vmx9ua-4"
+})(["border-radius:0 100% 0 0;"]);
+exports.QuarterEllipse3 = styled_components_1.default(Quarter).withConfig({
+  displayName: "style__QuarterEllipse3",
+  componentId: "sc-1vmx9ua-5"
+})(["border-radius:0 0 100% 0;"]);
+exports.QuarterEllipse4 = styled_components_1.default(Quarter).withConfig({
+  displayName: "style__QuarterEllipse4",
+  componentId: "sc-1vmx9ua-6"
+})(["border-radius:0 0 0 100%;"]);
+exports.Parallelograms = styled_components_1.default(Shape).withConfig({
+  displayName: "style__Parallelograms",
+  componentId: "sc-1vmx9ua-7"
+})(["background:#58a;font:bold 200%/1 sans-serif;transform:skewX(-45deg);"]);
+exports.DiamondImagesViaClipPath = styled_components_1.default.div.withConfig({
+  displayName: "style__DiamondImagesViaClipPath",
+  componentId: "sc-1vmx9ua-8"
+})(["background:url(", ") 100% 100% no-repeat;width:2rem;height:2rem;margin:0.2rem;-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);transition:1s;"], github);
+exports.BeveledCorners = styled_components_1.default.div.withConfig({
+  displayName: "style__BeveledCorners",
+  componentId: "sc-1vmx9ua-9"
+})(["background:linear-gradient(135deg,transparent 15px,#58a 0) top left,linear-gradient(-135deg,transparent 15px,#58a 0) top right,linear-gradient(-45deg,transparent 15px,#58a 0) bottom right,linear-gradient(45deg,transparent 15px,#58a 0) bottom left;background-size:50% 50%;background-repeat:no-repeat;padding:1em 1.2em;max-width:12em;color:white;font:150%/1.6 Baskerville,Palatino,serif;"]);
+exports.ScoopCorners = styled_components_1.default.div.withConfig({
+  displayName: "style__ScoopCorners",
+  componentId: "sc-1vmx9ua-10"
+})(["background:radial-gradient(circle at top left,transparent 0.2rem,#58a 0) top left,radial-gradient(circle at top right,transparent 0.2rem,#58a 0) top right,radial-gradient(circle at bottom right,transparent 0.2rem,#58a 0) bottom right,radial-gradient(circle at bottom left,transparent 0.2rem,#58a 0) bottom left;background-size:50% 50%;background-repeat:no-repeat;padding:0.2rem;max-width:4.2rem;color:white;"]);
+/**
+ * 未实现
+ * http://dabblet.com/gist/66e1e52ac2a44ad87aa4
+ */
+exports.Pie = styled_components_1.default.div.withConfig({
+  displayName: "style__Pie",
+  componentId: "sc-1vmx9ua-11"
+})(["display:inline-block;position:relative;width:100px;height:100px;line-height:100px;background:yellowgreen;color:transparent;text-align:center;border-radius:50%;background-image:linear-gradient(to right,transparent 50%,#655 0);"]);
+/******************************************************************************
+ * 背景与边框
+ */
+exports.BorderBg = styled_components_1.default.div.withConfig({
+  displayName: "style__BorderBg",
+  componentId: "sc-1vmx9ua-12"
+})(["display:flex;align-items:center;flex-wrap:wrap;padding:0.05rem;background:hsl(20,40%,90%);background-image:linear-gradient(90deg,#111 11px,transparent 0),linear-gradient(90deg,#222 23px,transparent 0),linear-gradient(90deg,#333 23px,transparent 0);background-size:83px 100%,61px 100%,41px 100%;"]);
+var Bg = styled_components_1.default.div.withConfig({
+  displayName: "style__Bg",
+  componentId: "sc-1vmx9ua-13"
+})(["width:2.2rem;min-height:1rem;padding:0.05rem;margin:0.05rem auto 0;font:100%/1.5 sans-serif;"]);
+/**
+ * background-clip
+ *
+ */
+exports.Border = styled_components_1.default(Bg).withConfig({
+  displayName: "style__Border",
+  componentId: "sc-1vmx9ua-14"
+})(["border:10px solid hsla(0,0%,100%,0.5);background:white 10% 10%;background-clip:padding-box;color:#000;"]);
+/**
+ * box-shadow
+ *
+ * PS:通过outline属性实现的“边框”不会贴合元素的圆角，不过 这一行为在未来可能会发生变化
+ *
+ */
+exports.MultipleBorders = styled_components_1.default(Bg).withConfig({
+  displayName: "style__MultipleBorders",
+  componentId: "sc-1vmx9ua-15"
+})(["background:yellowgreen;box-shadow:0 0 0 10px #655,0 0 0 15px deeppink,0 2px 5px 15px rgba(0,0,0,0.6);"]);
+/**
+ * outline
+ *
+ */
+exports.MultipleBorders2 = styled_components_1.default(Bg).withConfig({
+  displayName: "style__MultipleBorders2",
+  componentId: "sc-1vmx9ua-16"
+})(["background:yellowgreen;border:10px solid #655;outline:5px solid deeppink;"]);
+var SvgBg = styled_components_1.default(Bg).withConfig({
+  displayName: "style__SvgBg",
+  componentId: "sc-1vmx9ua-17"
+})(["background:url(http://csssecrets.io/images/code-pirate.svg) no-repeat bottom right #58a;"]);
+exports.BackgroundPosition = styled_components_1.default(SvgBg).withConfig({
+  displayName: "style__BackgroundPosition",
+  componentId: "sc-1vmx9ua-18"
+})(["background-position:right 0.2rem bottom 0.1rem;"]);
+exports.BackgroundOrigin = styled_components_1.default(SvgBg).withConfig({
+  displayName: "style__BackgroundOrigin",
+  componentId: "sc-1vmx9ua-19"
+})(["background-origin:content-box;"]);
+exports.BackgroundPositionCalc = styled_components_1.default(SvgBg).withConfig({
+  displayName: "style__BackgroundPositionCalc",
+  componentId: "sc-1vmx9ua-20"
+})(["background-position:calc(100% - 20px) calc(100% - 10px);"]);
+/**
+ * 条纹背景
+ * linear-gradient
+ * */
+exports.HorizontalStripes = styled_components_1.default(Bg).withConfig({
+  displayName: "style__HorizontalStripes",
+  componentId: "sc-1vmx9ua-21"
+})(["background:linear-gradient(#fb3 50%,#58a 0);background-size:100% 30px;"]);
+exports.VerticalStripes = styled_components_1.default(Bg).withConfig({
+  displayName: "style__VerticalStripes",
+  componentId: "sc-1vmx9ua-22"
+})(["background:linear-gradient(to right,#fb3 50%,#58a 0);background-size:30px 100%;"]);
+exports.DiagonalStripes = styled_components_1.default(Bg).withConfig({
+  displayName: "style__DiagonalStripes",
+  componentId: "sc-1vmx9ua-23"
+})(["background:linear-gradient( 45deg,#fb3 25%,#58a 0,#58a 50%,#fb3 0,#fb3 75%,#58a 0 );background-size:42.4px 42.4px;"]);
+exports.DiagonalStripes2 = styled_components_1.default(Bg).withConfig({
+  displayName: "style__DiagonalStripes2",
+  componentId: "sc-1vmx9ua-24"
+})(["background:repeating-linear-gradient( 60deg,#fb3,#fb3 15px,#58a 0,#58a 30px );"]);
+exports.SubtleStripes = styled_components_1.default(Bg).withConfig({
+  displayName: "style__SubtleStripes",
+  componentId: "sc-1vmx9ua-25"
+})(["background:#58a;background-image:repeating-linear-gradient( 30deg,hsla(0,0%,100%,0.1),hsla(0,0%,100%,0.1) 15px,transparent 0,transparent 0.3rem );"]);
+exports.PseudorandomStripes = styled_components_1.default(Bg).withConfig({
+  displayName: "style__PseudorandomStripes",
+  componentId: "sc-1vmx9ua-26"
+})(["background:hsl(20,40%,90%);background-image:linear-gradient(90deg,#fb3 11px,transparent 0),linear-gradient(90deg,#ab4 23px,transparent 0),linear-gradient(90deg,#655 23px,transparent 0);background-size:83px 100%,61px 100%,41px 100%;"]);
+exports.BlueprintGrid = styled_components_1.default(Bg).withConfig({
+  displayName: "style__BlueprintGrid",
+  componentId: "sc-1vmx9ua-27"
+})(["background:#58a;background-image:linear-gradient(white 2px,transparent 0),linear-gradient(90deg,white 2px,transparent 0),linear-gradient(hsla(0,0%,100%,0.3) 1px,transparent 0),linear-gradient(90deg,hsla(0,0%,100%,0.3) 1px,transparent 0);background-size:50px 50px,50px 50px,10px 10px,10px 10px;"]);
+exports.PolkaDot = styled_components_1.default(Bg).withConfig({
+  displayName: "style__PolkaDot",
+  componentId: "sc-1vmx9ua-28"
+})(["background:#655;background-image:radial-gradient(tan 20%,transparent 0),radial-gradient(tan 20%,transparent 0);background-size:30px 30px;background-position:0 0,15px 15px;"]);
+exports.ConicGradients = styled_components_1.default(Bg).withConfig({
+  displayName: "style__ConicGradients",
+  componentId: "sc-1vmx9ua-29"
+})(["background:red;background:conic-gradient(limegreen,green,limegreen);"]);
+exports.CheckerboardSVG = styled_components_1.default(Bg).withConfig({
+  displayName: "style__CheckerboardSVG",
+  componentId: "sc-1vmx9ua-30"
+})(["background:#eee url('data:image/svg+xml,            <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\" fill-opacity=\".25\" >            <rect x=\"50\" width=\"50\" height=\"50\" />            <rect y=\"50\" width=\"50\" height=\"50\" />            </svg>');background-size:30px 30px;"]);
+exports.ContinuousImageBorders = styled_components_1.default(Bg).withConfig({
+  displayName: "style__ContinuousImageBorders",
+  componentId: "sc-1vmx9ua-31"
+})(["border:1em solid transparent;background:linear-gradient(white,white) padding-box,url(http://csssecrets.io/images/stone-art.jpg) border-box 0 / cover;width:21em;padding:1em;overflow:hidden;resize:both;font:100%/1.6 Baskerville,Palatino,serif;"]);
+exports.VintageEnvelopeBorder = styled_components_1.default(Bg).withConfig({
+  displayName: "style__VintageEnvelopeBorder",
+  componentId: "sc-1vmx9ua-32"
+})(["padding:1em;border:1em solid transparent;background:linear-gradient(white,white) padding-box,repeating-linear-gradient( -45deg,red 0,red 12.5%,transparent 0,transparent 25%,#58a 0,#58a 37.5%,transparent 0,transparent 50% ) 0 / 6em 6em;max-width:20em;font:100%/1.6 Baskerville,Palatino,serif;"]);
+exports.MarchingAntsBorder = styled_components_1.default(Bg).withConfig({
+  displayName: "style__MarchingAntsBorder",
+  componentId: "sc-1vmx9ua-33"
+})(["padding:1em;border:1px solid transparent;background:linear-gradient(white,white) padding-box,repeating-linear-gradient( -45deg,black 0,black 25%,transparent 0,transparent 50% ) 0 / 0.6em 0.6em;animation:ants 12s linear infinite;max-width:20em;font:100%/1.6 Baskerville,Palatino,serif;"]);
+exports.FootnoteStyleBorder = styled_components_1.default(Bg).withConfig({
+  displayName: "style__FootnoteStyleBorder",
+  componentId: "sc-1vmx9ua-34"
+})(["background:#fff;border-top:0.15em solid transparent;border-image:100% 0 0 linear-gradient(90deg,currentColor 4em,transparent 0);padding-top:0.5em;font:220%/1.4 Baskerville,Palatino,serif;"]);
+/******************************************************************************
+ * clear
+ * clip
+ * content
+ * counter-increment
+ * display
+ * float
+ * outline
+ * overflow
+ */
+/**
+ * background 这个是一种简写可以在一个声明中描述所有背景属性
+ * [ background-color || background-image || background-repeat
+ * || background-attachment || background-position
+ * ]
+ *
+ * background-attachment
+ *   文档滚动时候背景图像是否随着元素滚动
+ * scroll	默认值。背景图像会随着页面其余部分的滚动而移动。
+ * fixed	当页面的其余部分滚动时，背景图像不会移动。
+ * inherit	规定应该从父元素继承 background-attachment 属性的设置。
+ */
+exports.Background = styled_components_1.default.div.withConfig({
+  displayName: "style__Background",
+  componentId: "sc-1vmx9ua-35"
+})(["background:rgba(30,30,30,1);display:flex;justify-content:center;font-family:PingFangSC-Semibold;font-size:0.18rem;height:100%;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;"]);
+exports.Layout = styled_components_1.default.div.withConfig({
+  displayName: "style__Layout",
+  componentId: "sc-1vmx9ua-36"
+})(["width:10rem;height:100%;"]);
+exports.Head = styled_components_1.default.div.withConfig({
+  displayName: "style__Head",
+  componentId: "sc-1vmx9ua-37"
+})(["background:#000;display:flex;align-items:center;height:0.5rem;margin:0;border-color:#fff;margin-bottom:0.05rem;"]);
+exports.Body = styled_components_1.default.div.withConfig({
+  displayName: "style__Body",
+  componentId: "sc-1vmx9ua-38"
+})(["display:flex;flex-direction:column;"]);
+var Item = styled_components_1.default.div.withConfig({
+  displayName: "style__Item",
+  componentId: "sc-1vmx9ua-39"
+})(["width:5rem;height:0.4rem;"]);
+/**
+ * border
+ * [border-width || border-style || border-color] | inherit
+ *
+ * border-style
+ * none	定义无边框。
+ * hidden	与 "none" 相同。不过应用于表时除外，对于表，hidden 用于解决边框冲突。
+ * dotted	定义点状边框。在大多数浏览器中呈现为实线。
+ * dashed	定义虚线。在大多数浏览器中呈现为实线。
+ * solid	定义实线。
+ * double	定义双线。双线的宽度等于 border-width 的值。
+ * groove	定义 3D 凹槽边框。其效果取决于 border-color 的值。
+ * ridge	定义 3D 垄状边框。其效果取决于 border-color 的值。
+ * inset	定义 3D inset 边框。其效果取决于 border-color 的值。
+ * outset	定义 3D outset 边框。其效果取决于 border-color 的值。
+ * inherit	规定应该从父元素继承边框样式。
+ */
+exports.Border2 = styled_components_1.default(Item).withConfig({
+  displayName: "style__Border2",
+  componentId: "sc-1vmx9ua-40"
+})(["border:1px #fff solid;width:5rem;height:0.5rem;color:#fff;margin-left:0.2rem;border-radius:1rem;"]);
+/**
+ * cursor 属性规定要显示的光标的类型（形状）。
+ *
+ * url	需使用的自定义光标的 URL。
+ *      注释：请在此列表的末端始终定义一种普通的光标，以防没有由 URL 定义的可用光标。
+ * default	默认光标（通常是一个箭头）
+ * auto	默认。浏览器设置的光标。
+ * crosshair	光标呈现为十字线。
+ * pointer	光标呈现为指示链接的指针（一只手）
+ * move	此光标指示某对象可被移动。
+ * e-resize	此光标指示矩形框的边缘可被向右（东）移动。
+ * ne-resize	此光标指示矩形框的边缘可被向上及向右移动（北/东）。
+ * nw-resize	此光标指示矩形框的边缘可被向上及向左移动（北/西）。
+ * n-resize	此光标指示矩形框的边缘可被向上（北）移动。
+ * se-resize	此光标指示矩形框的边缘可被向下及向右移动（南/东）。
+ * sw-resize	此光标指示矩形框的边缘可被向下及向左移动（南/西）。
+ * s-resize	此光标指示矩形框的边缘可被向下移动（南）。
+ * w-resize	此光标指示矩形框的边缘可被向左移动（西）。
+ * text	此光标指示文本。
+ * wait	此光标指示程序正忙（通常是一只表或沙漏）。
+ * help	此光标指示可用的帮助（通常是一个问号或一个气球）。
+ */
+exports.Cursor = styled_components_1.default(Item).withConfig({
+  displayName: "style__Cursor",
+  componentId: "sc-1vmx9ua-41"
+})(["cursor:pointer;"]);
+/**
+ * font
+ * [[font-style || font-variant || font-weight] ? font-size [/ line-height] ? font-family ]
+ *  ]
+ *
+ * font-style
+ * normal	默认值。浏览器显示一个标准的字体样式。
+ * italic	浏览器会显示一个斜体的字体样式。
+ * oblique	浏览器会显示一个倾斜的字体样式。
+ * inherit	规定应该从父元素继承字体样式。
+ *
+ * font-variant
+ *   属性设置小型大写字母的字体显示文本，这意味着所有的小写字母均会被转换为大写，
+ *   但是所有使用小型大写字体的字母与其余文本相比，其字体尺寸更小。
+ * normal	默认值。浏览器会显示一个标准的字体。
+ * small-caps	浏览器会显示小型大写字母的字体。
+ * inherit	规定应该从父元素继承 font-variant 属性的值。
+ *
+ * letter-spacing 字符之间插入多少空间，默认0
+ *
+ * text-align
+ * left	把文本排列到左边。默认值：由浏览器决定。
+ * right	把文本排列到右边。
+ * center	把文本排列到中间。
+ * justify	实现两端对齐文本效果。
+ * inherit	规定应该从父元素继承 text-align 属性的值。
+ *
+ * text-decoration
+ * none	默认。定义标准的文本。
+ * underline	定义文本下的一条线。
+ * overline	定义文本上的一条线。
+ * line-through	定义穿过文本下的一条线。
+ * blink	定义闪烁的文本。
+ * inherit	规定应该从父元素继承
+ *
+ * text-indent 属性规定文本块中首行文本的缩进
+ *
+ * text-transform 属性控制文本的大小写。
+ * none	默认。定义带有小写字母和大写字母的标准的文本。
+ * capitalize	文本中的每个单词以大写字母开头。
+ * uppercase	定义仅有大写字母。
+ * lowercase	定义无大写字母，仅有小写字母。
+ * inherit	规定应该从父元素继承 text-transform 属性的值。
+ *
+ */
+exports.Font = styled_components_1.default(Item).withConfig({
+  displayName: "style__Font",
+  componentId: "sc-1vmx9ua-42"
+})(["background:#aaa;font-style:italic;font-size:0.3rem;font-variant:small-caps;font-weight:bold;letter-spacing:-0.03rem;line-height:0.4rem;text-align:center;text-decoration:line-through;text-indent:10%;text-transform:capitalize;"]);
+/**
+ * list-style
+ *
+ * list-style-image
+ * URL	图像的路径。
+ * none	默认。无图形被显示。
+ * inherit	规定应该从父元素继承 list-style-image 属性的值。
+ *
+ * list-style-position
+ * inside	列表项目标记放置在文本以内，且环绕文本根据标记对齐。
+ * outside	默认值。保持标记位于文本的左侧。列表项目标记放置在文本以外，且环绕文本不根据标记对齐。
+ * inherit	规定应该从父元素继承 list-style-position 属性的值。
+ *
+ * list-style-type
+ * none	无标记。
+ * disc	默认。标记是实心圆。
+ * circle	标记是空心圆。
+ * square	标记是实心方块。
+ * decimal	标记是数字。
+ * decimal-leading-zero	0开头的数字标记。(01, 02, 03, 等。)
+ * lower-roman	小写罗马数字(i, ii, iii, iv, v, 等。)
+ * upper-roman	大写罗马数字(I, II, III, IV, V, 等。)
+ * lower-alpha	小写英文字母The marker is lower-alpha (a, b, c, d, e, 等。)
+ * upper-alpha	大写英文字母The marker is upper-alpha (A, B, C, D, E, 等。)
+ * lower-greek	小写希腊字母(alpha, beta, gamma, 等。)
+ * lower-latin	小写拉丁字母(a, b, c, d, e, 等。)
+ * upper-latin	大写拉丁字母(A, B, C, D, E, 等。)
+ * hebrew	传统的希伯来编号方式
+ * armenian	传统的亚美尼亚编号方式
+ * georgian	传统的乔治亚编号方式(an, ban, gan, 等。)
+ * cjk-ideographic	简单的表意数字
+ * hiragana	标记是：a, i, u, e, o, ka, ki, 等。（日文片假名）
+ * katakana	标记是：A, I, U, E, O, KA, KI, 等。（日文片假名）
+ * hiragana-iroha	标记是：i, ro, ha, ni, ho, he, to, 等。（日文片假名）
+ * katakana-iroha	标记是：I, RO, HA, NI, HO, HE, TO, 等。（日文片假名）
+ */
+exports.List = styled_components_1.default.div.withConfig({
+  displayName: "style__List",
+  componentId: "sc-1vmx9ua-43"
+})(["list-style:circle url(", ");left:2rem;"], github);
+/**
+ * margin 外边距
+ * 4个值分别是 12点 3点，6点，9点 顺时针的位置。
+ */
+exports.Margin = styled_components_1.default(Item).withConfig({
+  displayName: "style__Margin",
+  componentId: "sc-1vmx9ua-44"
+})(["margin:0.1rem 0.2rem 0.3rem 0.4rem;border:1px #fff solid;"]);
+/**
+ * padding 内边距宽度
+ * 4个值分别是 12点 3点，6点，9点 顺时针的位置。
+ */
+exports.Padding = styled_components_1.default.div.withConfig({
+  displayName: "style__Padding",
+  componentId: "sc-1vmx9ua-45"
+})(["padding:0.1rem 0.2rem 0.3rem 0.4rem;border:1px #fff solid;"]);
+/**
+ * position
+ *
+ * absolute	生成绝对定位的元素，相对于 static 定位以外的第一个父元素进行定位。
+ *          元素的位置通过 "left", "top", "right" 以及 "bottom" 属性进行规定。
+ * fixed	  生成绝对定位的元素，相对于浏览器窗口进行定位。
+ *          元素的位置通过 "left", "top", "right" 以及 "bottom" 属性进行规定。
+ * relative 生成相对定位的元素，相对于其正常位置进行定位。
+ *          因此，"left:20" 会向元素的 LEFT 位置添加 20 像素。
+ * static	  默认值。没有定位，元素出现在正常的流中（忽略 top, bottom, left, right 或者 z-index 声明）。
+ * inherit	规定应该从父元素继承 position 属性的值。
+ */
+exports.Position = styled_components_1.default(Item).withConfig({
+  displayName: "style__Position",
+  componentId: "sc-1vmx9ua-46"
+})(["position:absolute;left:0;"]);
+/**
+ * white-space 属性设置如何处理元素内的空白。
+ * normal	默认。空白会被浏览器忽略。
+ * pre	空白会被浏览器保留。其行为方式类似 HTML 中的 <pre> 标签。
+ * nowrap	文本不会换行，文本会在在同一行上继续，直到遇到 <br> 标签为止。
+ * pre-wrap	保留空白符序列，但是正常地进行换行。
+ * pre-line	合并空白符序列，但是保留换行符。
+ * inherit	规定应该从父元素继承 white-space 属性的值。
+ */
+exports.WhiteSpace = styled_components_1.default(Item).withConfig({
+  displayName: "style__WhiteSpace",
+  componentId: "sc-1vmx9ua-47"
+})(["white-space:nowrap;"]);
+
+/***/ }),
+
+/***/ "aJac":
+/*!*******************************************************!*\
+  !*** ./src/container/CSSPage/borderAndBackground.tsx ***!
+  \*******************************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var React = __webpack_require__(/*! react */ "q1tI");
+var style_1 = __webpack_require__(/*! ./style */ "a00I");
+/**
+ * 背景与边框
+ */
+function borderAndBackground() {
+  return React.createElement(
+    style_1.BorderBg,
+    null,
+    React.createElement(
+      style_1.Border,
+      null,
+      "\u534A\u900F\u660E"
+    ),
+    React.createElement(
+      style_1.MultipleBorders,
+      null,
+      "\u591A\u91CD\u8FB9\u6846box-shadow"
+    ),
+    React.createElement(
+      style_1.MultipleBorders2,
+      null,
+      "\u591A\u91CD\u8FB9\u6846outline"
+    ),
+    React.createElement(
+      style_1.BackgroundPosition,
+      null,
+      "bacskground-position"
+    ),
+    React.createElement(
+      style_1.BackgroundOrigin,
+      null,
+      "background-origin"
+    ),
+    React.createElement(
+      style_1.BackgroundPositionCalc,
+      null,
+      "background-position-calc"
+    ),
+    React.createElement(style_1.HorizontalStripes, null),
+    React.createElement(style_1.VerticalStripes, null),
+    React.createElement(style_1.DiagonalStripes, null),
+    React.createElement(style_1.DiagonalStripes2, null),
+    React.createElement(style_1.SubtleStripes, null),
+    React.createElement(
+      style_1.PseudorandomStripes,
+      null,
+      "\u968F\u673A\u6761\u7EB9\u80CC\u666F"
+    ),
+    React.createElement(style_1.BlueprintGrid, null),
+    React.createElement(style_1.PolkaDot, null),
+    React.createElement(style_1.ConicGradients, null),
+    React.createElement(style_1.CheckerboardSVG, null),
+    React.createElement(
+      style_1.ContinuousImageBorders,
+      null,
+      "Bacon ipsum dolor amet eu adipisicing elit tongue ground round ex fatback proident kielbasa ham hock. Sausage beef beef ribs aliquip t-bone mollit."
+    ),
+    React.createElement(
+      style_1.VintageEnvelopeBorder,
+      null,
+      "Quis beef tri-tip sunt, cupim ut magna salami t-bone. Ut laboris bresaola ribeye biltong landjaeger."
+    ),
+    React.createElement(
+      style_1.MarchingAntsBorder,
+      null,
+      "Bacon ipsum dolor amet eu adipisicing elit tongue ground round ex fatback proident kielbasa ham hock."
+    ),
+    React.createElement(
+      style_1.FootnoteStyleBorder,
+      null,
+      "This is a footnote."
+    )
+  );
+}
+borderAndBackground.displayName = "borderAndBackground";
+exports.default = borderAndBackground;
 
 /***/ }),
 
@@ -1024,6 +1734,60 @@ module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQMAAAEDCAMAAAAG
 
 /***/ }),
 
+/***/ "kwYQ":
+/*!************************************!*\
+  !*** ./src/services/api-schema.ts ***!
+  \************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function getVisaInfo() {
+    return function (body) {
+        return {
+            method: "get",
+            path: "vita",
+            name: "data",
+            payload: body
+        };
+    };
+}
+exports.getVisaInfo = getVisaInfo;
+
+/***/ }),
+
+/***/ "mavY":
+/*!***************************************************!*\
+  !*** ./src/note/ThePragmaticProgrammer/index.tsx ***!
+  \***************************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var React = __webpack_require__(/*! react */ "q1tI");
+var Markdown = __webpack_require__(/*! react-markdown */ "IujW");
+var style_1 = __webpack_require__(/*! ./style */ "KEQN");
+var ThePragmaticProgrammer_md_1 = __webpack_require__(/*! ./ThePragmaticProgrammer.md */ "siL1");
+function thePragmaticProgrammer() {
+  return React.createElement(
+    style_1.Background,
+    null,
+    React.createElement(Markdown, { source: ThePragmaticProgrammer_md_1.default, escapeHtml: false })
+  );
+}
+thePragmaticProgrammer.displayName = "thePragmaticProgrammer";
+exports.default = thePragmaticProgrammer;
+
+/***/ }),
+
 /***/ "nLtH":
 /*!************************************!*\
   !*** ./src/assets/vita/github.png ***!
@@ -1055,6 +1819,10 @@ var _assign = __webpack_require__(/*! babel-runtime/core-js/object/assign */ "P2
 
 var _assign2 = _interopRequireDefault(_assign);
 
+var _typeof2 = __webpack_require__(/*! babel-runtime/helpers/typeof */ "EJiy");
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
 var _keys = __webpack_require__(/*! babel-runtime/core-js/object/keys */ "GQeE");
 
 var _keys2 = _interopRequireDefault(_keys);
@@ -1062,35 +1830,56 @@ var _keys2 = _interopRequireDefault(_keys);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var redux_starter_kit_1 = __webpack_require__(/*! redux-starter-kit */ "+tof");
+var _ = __webpack_require__(/*! lodash */ "LvDl");
 var redux_thunk_1 = __webpack_require__(/*! redux-thunk */ "sINF");
+var action_1 = __webpack_require__(/*! ../action */ "O3TY");
 var redux_1 = __webpack_require__(/*! redux */ "ANjH");
-var react_router_redux_1 = __webpack_require__(/*! react-router-redux */ "L342");
 var history_1 = __webpack_require__(/*! history */ "LhCv");
 var reducer_1 = __webpack_require__(/*! ../reducer */ "YeJN");
-var _ = __webpack_require__(/*! lodash */ "LvDl");
-var action_1 = __webpack_require__(/*! ../action */ "O3TY");
-var ignoreAction = {
-    SEND_AOC_DATA: true,
-    "finish: SEND_AOC_DATA": true,
-    HANDLER_FOR: true,
-    SET_LEFT_TIME: true
+var react_router_redux_1 = __webpack_require__(/*! react-router-redux */ "L342");
+var ignoreAction = {};
+var catchErrorMiddleware = function catchErrorMiddleware(store) {
+    return function (next) {
+        return function (action) {
+            try {
+                next(action);
+            } catch (e) {
+                setTimeout(function () {
+                    // TODO:
+                    // sendErrorLog("unhandled_action_error", ERROR_ACTION_ERROR, e, {
+                    //   erroStack: e.stack
+                    // });
+                });
+            }
+        };
+    };
 };
+// export interface IDependency {
+//   api: Api;
+//   exp: Experiment;
+//   service: ServiceProxy;
+// }
 exports.default = function (context) {
     // use chrome extension
     var composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__({
         actionsBlacklist: (0, _keys2.default)(ignoreAction)
     }) || redux_1.compose;
+    var serializableMiddleware = redux_starter_kit_1.createSerializableStateInvariantMiddleware({
+        isSerializable: function isSerializable(val) {
+            return val === null || typeof val === "undefined" || typeof val === "string" || typeof val === "boolean" || typeof val === "number" || typeof val === "function" || (typeof val === "undefined" ? "undefined" : (0, _typeof3.default)(val)) === "object" || Array.isArray(val);
+        }
+    });
+    var starterKitDefaultMiddleware = redux_starter_kit_1.getDefaultMiddleware();
+    starterKitDefaultMiddleware.length > 1 ? starterKitDefaultMiddleware[starterKitDefaultMiddleware.length - 1] = serializableMiddleware : null;
     // history
     var history = history_1.createBrowserHistory();
     var middlewares = [redux_thunk_1.default, react_router_redux_1.routerMiddleware(history)];
     var store = redux_1.createStore(redux_1.combineReducers((0, _assign2.default)((0, _assign2.default)({}, reducer_1.default), { router: react_router_redux_1.routerReducer })), composeEnhancers(redux_1.applyMiddleware.apply(redux_1, middlewares)));
-    var actions = _.mapValues(action_1.conbinedActions, function (action) {
+    var actions = _.mapValues(action_1.AppActions, function (action) {
         return redux_1.bindActionCreators(action, store.dispatch);
     });
-    window.__AOC_STORE__ = store;
-    window.__GET_ROOM_SUMMARY__ = function () {
-        return getRoomSummary$(store.getState());
-    };
+    window.__STORE__ = store;
     return _promise2.default.resolve((0, _assign2.default)((0, _assign2.default)({}, context), { store: store, history: history, actions: actions }));
 };
 
@@ -1172,16 +1961,22 @@ var ubuntu = __webpack_require__(/*! ../../assets/vita/ubuntu.png */ "zOwq");
 var docker = __webpack_require__(/*! ../../assets/vita/docker.png */ "4ZEF");
 var python = __webpack_require__(/*! ../../assets/vita/python.png */ "DPi+");
 var ts = __webpack_require__(/*! ../../assets/vita/ts.png */ "YnXR");
+var git = __webpack_require__(/*! ../../assets/vita/git.png */ "vQZ7");
+var mysql = __webpack_require__(/*! ../../assets/vita/mysql.png */ "rC5b");
+var aws = __webpack_require__(/*! ../../assets/vita/aws.png */ "VLBZ");
 exports.info = {
     name: "\u738B\u5FD7\u660E",
     position: "H5\u524D\u7AEF\u7814\u53D1\u5DE5\u7A0B\u5E08",
     sub: {
         英文名: "Fox",
         性别: "\u7537",
+        祖籍: "\u4E0A\u6D77",
         年龄: new Date().getFullYear() - 1981 + "\u5C81",
         工作地点: "\u4E0A\u6D77\u6D66\u4E1C",
         工龄: new Date().getFullYear() - 2006 + "\u5E74",
-        政治面貌: "\u7FA4\u4F17"
+        政治面貌: "\u7FA4\u4F17",
+        兴趣: "\u9605\u8BFB,\u65C5\u6E38",
+        运动: "\u9A6C\u62C9\u677E"
     },
     intention: {
         工作类型: "\u5168\u804C",
@@ -1204,7 +1999,7 @@ exports.work = [{
 exports.project = [{
     time: "2017\u5E7405\u6708 - 2019\u5E7408\u6708",
     name: "\u7231\u4E50\u5947\u89C6\u9891\u5916\u6559-\u7EBF\u4E0A\u667A\u6167\u8BFE\u5802(pc\u7AEFmac\u7AEF)",
-    introduction: "\u804C\u4F4D\u540D\u79F0\uFF1AHTML5\u524D\u7AEF\u5DE5\u7A0B\u5E08\n" + "\u9879\u76EE\u89C4\u6A21\uFF1A\u524D\u7AEF5\u4EBA\uFF0C\u540E\u7AEF\uFF0CQA\uFF0C\u8FD0\u7EF4\u82E5\u5E72\u3002\n" + "\u9879\u76EE\u7B80\u4ECB\uFF1A\u89C6\u9891\u5916\u6559\u662F\u7231\u4E50\u5947\u516C\u53F8\u4E3A\u57F9\u8BAD\u5B66\u6821\u63D0\u4F9B\u7684\u4E00\u5957\u6559\u5B66\u89E3\u51B3\u65B9\u6848\u3002\u901A\u8FC7\u5728\u7EBF\u89C6\u9891\uFF0C\u8BA9\u5916\u6559\u8001\u5E08\u6388\u8BFE\uFF0C\u63D0\u5347\u5B66\u5458\u82F1\u8BED\u542C\u8BF4\u548C\u5E94\u7528\u80FD\u529B\u3002\uFF08https://www.alo7.com/services/izj.html\uFF09\n" + "\u4E3B\u8981\u6280\u672F\u6808\uFF1A\n" + "1. \u5E95\u5C42\uFF1Ajs(ES6), TS\u3002\n" + "\u7528TS\u7684\u76EE\u7684\u662FTS\u6570\u636E\u8981\u6C42\u5E26\u6709\u660E\u786E\u7684\u7C7B\u578B\uFF0C\u4FBF\u4E8E\u5728\u9879\u76EE\u9010\u6E10\u53D8\u5927\u4EE5\u540E\u65B9\u4FBF\u56E2\u961F\u534F\u4F5C\u3002\n" + "2. \u5C01\u88C5\uFF1Aelectron \u89E3\u51B3\u4E86\u8DE8\u5E73\u53F0\uFF0C\u81EA\u52A8\u66F4\u65B0\uFF0C\u5B89\u88C5\u5E94\u7528\n" + "3. UI:css3\uFF0Crem\uFF0Cstyled-components\n" + "styled-components\u53EF\u4EE5\u89E3\u51B3css\u4E2D\u4E0D\u80FD\u5E26\u903B\u8F91\uFF0C\u53EF\u4EE5\u51CF\u5C11css\u76F8\u5173\u7684\u4EE3\u7801\u3002\n" + "rem\u53EF\u4EE5\u89E3\u51B3\u5728\u4E0D\u540C\u5206\u8FA8\u7387\u663E\u793A\u5668\u9875\u9762\u5C55\u73B0\u95EE\u9898\n" + "4. \u6E32\u67D3\u5C42: react\u63D0\u5347UI\u6E32\u67D3\u6027\u80FD\uFF0C\u63D0\u9AD8\u7528\u6237\u4F53\u9A8C\u3002 UI\u7EC4\u4EF6\u6A21\u5757\u5316\uFF0C\u63D0\u9AD8\u53EF\u590D\u7528\u6027\u3002 \n" + "5.\u89C6\u9891\u670D\u52A1\u7531\u7B2C\u4E09\u65B9\u63D0\u4F9B",
+    introduction: "\u804C\u4F4D\u540D\u79F0\uFF1AHTML5\u524D\u7AEF\u5DE5\u7A0B\u5E08\n" + "\u9879\u76EE\u89C4\u6A21\uFF1A\u524D\u7AEF5\u4EBA\uFF0C\u540E\u7AEF\uFF0CQA\uFF0C\u8FD0\u7EF4\u82E5\u5E72\u3002\n" + "\u9879\u76EE\u7B80\u4ECB\uFF1A\u89C6\u9891\u5916\u6559\u662F\u7231\u4E50\u5947\u516C\u53F8\u4E3A\u57F9\u8BAD\u5B66\u6821\u63D0\u4F9B\u7684\u4E00\u5957\u6559\u5B66\u89E3\u51B3\u65B9\u6848\u3002\u901A\u8FC7\u5728\u7EBF\u89C6\u9891\uFF0C\u8BA9\u5916\u6559\u8001\u5E08\u6388\u8BFE\uFF0C\u63D0\u5347\u5B66\u5458\u82F1\u8BED\u542C\u8BF4\u548C\u5E94\u7528\u80FD\u529B\u3002\uFF08https://www.alo7.com/services/izj.html\uFF09\n" + "\u4E3B\u8981\u6280\u672F\u6808\uFF1A\n" + "1. \u5E95\u5C42\uFF1Ajs(ES6), TS\u3002\n" + "    \u7528TS\u7684\u76EE\u7684\u662FTS\u6570\u636E\u8981\u6C42\u5E26\u6709\u660E\u786E\u7684\u7C7B\u578B\uFF0C\u4FBF\u4E8E\u5728\u9879\u76EE\u9010\u6E10\u53D8\u5927\u4EE5\u540E\u65B9\u4FBF\u56E2\u961F\u534F\u4F5C\u3002\n" + "2. \u5C01\u88C5\uFF1Aelectron \u89E3\u51B3\u4E86\u8DE8\u5E73\u53F0\uFF0C\u81EA\u52A8\u66F4\u65B0\uFF0C\u5B89\u88C5\u5E94\u7528\n" + "3. UI:css3\uFF0Cstyled-components\n" + "    styled-components\u53EF\u4EE5\u89E3\u51B3css\u4E2D\u4E0D\u80FD\u5E26\u903B\u8F91\uFF0C\u53EF\u4EE5\u50CF\u7528\u7EC4\u4EF6\u7684\u65B9\u5F0F\u7684\u6765\u590D\u7528css\u7684\u6837\u5F0F\u3002\n" + "4. \u6E32\u67D3\u5C42: react\u63D0\u5347UI\u6E32\u67D3\u6027\u80FD\uFF0C\u63D0\u9AD8\u7528\u6237\u4F53\u9A8C\u3002 UI\u7EC4\u4EF6\u6A21\u5757\u5316\uFF0C\u63D0\u9AD8\u53EF\u590D\u7528\u6027\u3002 \n" + "5.\u89C6\u9891\u670D\u52A1\u7531\u7B2C\u4E09\u65B9\u63D0\u4F9B",
     duty: "\u4E3B\u8981\u8D1F\u8D23\u89C6\u9891\u5916\u6559\u9879\u76EE\u7684pc\u7AEF\u548Cmac\u7AEF\u7684\u5F00\u53D1\uFF0C\u89C6\u9891\u6D41\u670D\u52A1\u5546\u5BF9\u63A5\u3002\n" + "\u5177\u4F53\u5185\u5BB9\u5305\u62EC\uFF1A\n" + "1.\u6839\u636E\u4EA7\u54C1\u8BBE\u8BA1\u5E08\u63D0\u4F9B\u7684PRD\u548C\u4EA4\u4E92\u8BBE\u8BA1\u5E08\u63D0\u4F9B\u7684UI\uFF0C\u5F00\u53D1\u5E76\u5B9E\u73B0\u5B66\u751F\u7AEF\uFF0C\u6559\u5E08\u7AEF\u76F8\u5173\u9875\u9762\u5F00\u53D1\uFF0C\u52A8\u753B\u7279\u6548\u3002 \u4E3B\u8981\u6280\u672F\u6808\uFF1Aelectron\uFF0Creact\uFF0Cstyled-components\n" + "2.\u6839\u636E\u8FD0\u7EF4\u8981\u6C42\uFF0C\u6BCF\u4E24\u5468\u4E00\u6B21\u529F\u80FD\u8FED\u4EE3\uFF0C\u81EA\u52A8\u5316\u96C6\u6210\u53D1\u5E03\u4E0A\u7EBF\u3002\u4E3B\u8981\u6280\u672F\u6808\uFF1Awebpack, glup, gitlab-ci, jenkins, docker, shell\u3002\n" + "3.\u91C7\u96C6\u7528\u6237\u76F8\u5173\u7684\u6570\u636E\u548C\u9519\u8BEF\u6808\uFF0C\u7BA1\u7406\u548C\u76D1\u63A7\u9879\u76EE\u5065\u5EB7\u72B6\u51B5\u3002 \u4E3B\u8981\u6280\u672F\u6808\uFF1Akibana\uFF0Celasticsearch, bi\u3002"
 }, {
     time: "2015\u5E7404\u6708 - 2017\u5E7401\u6708",
@@ -1218,7 +2013,7 @@ exports.project = [{
     duty: "\u8D1F\u8D23\u76F8\u5173\u9898\u578B\u5F00\u53D1"
 }, {
     time: "2010\u5E7408\u6708 - 2013\u5E7412\u6708",
-    name: "\u7231\u4E50\u5947\u865A\u62DF\u4E16\u754C",
+    name: "\u7231\u4E50\u5947\u865A\u62DF\u4E16\u754C(2020\u5E745\u670831\u65E5\u4E0B\u7EBF)",
     introduction: "\u804C\u4F4D\u540D\u79F0\uFF1Aflash/as3\u5DE5\u7A0B\u5E08\n" + "\u4E3B\u8981\u6280\u6808\uFF1Aflex actionscript3\n" + "\u9879\u76EE\u89C4\u6A21\uFF1A\u524D\u7AEF10\u4EBA\uFF0C\u540E\u7AEF\u7B49\u82E5\u5E72\u3002\n" + "\u9879\u76EE\u7B80\u4ECB\uFF1A\u5C11\u513F\u5B66\u4E60\u82F1\u8BED\u7684\u5E73\u53F0\uFF0C\u5206\u4E3A\u5E73\u53F0\u7AEF\u548C\u5185\u5BB9\u7AEF\u3002\u5E73\u53F0\u7AEF\u7684\u5185\u5BB9\u4E3B\u8981\u662F\u5C55\u73B0\u6574\u4E2A\u865A\u62DF\u4E16\u754C\u7684\u5730\u56FE\u573A\u666F\uFF0C\u8FD0\u8425\u6D3B\u52A8\uFF0C\u4E2A\u4EBA\u4FE1\u606F\u7B49\u7B49\u3002\u5185\u5BB9\u7AEF\u6709\u7EC3\u4E60\uFF08learning app\uFF09\uFF0C\u76CA\u667A\u6E38\u620F\uFF0C\u5546\u5E97\uFF0C\u5BA0\u7269\u517B\u6210\u7B49\u7B49\u3002",
     duty: "\u4E3B\u8981\u8D1F\u8D23\u5185\u5BB9\u6709\uFF1A\u5E73\u53F0\u7AEF\u573A\u666F\uFF0C\u4E2A\u4EBA\u4FE1\u606F\u3001\u73ED\u7EA7\u3001\u4F1A\u5458\u7BA1\u7406\u5DF2\u7ECF\u3002\u5185\u5BB9\u7AEF\u7684\u90E8\u5206\u9898\u578B\uFF0C\u5546\u5E97\u3002\n" + "\u5177\u4F53\u5185\u5BB9\u5305\u62EC\uFF1A\n" + "1. \u5E73\u53F0\u7AEF\uFF1A\u573A\u666F\uFF0C\u4E2A\u4EBA\u4FE1\u606F\u3001\u73ED\u7EA7\u3001\u4F1A\u5458\u7BA1\u7406\uFF0C\u5E73\u53F0\u548Capp\u5BF9\u63A5\u3002\u4E3B\u8981\u6280\u672F\uFF1AGC\uFF0C\u5BFB\u8DEF\u3002\n" + "2. \u5185\u5BB9\u7AEF\uFF1A\u90E8\u5206\u6E38\u620F\uFF0C\u9898\u578B\u3002\u4E3B\u8981\u6280\u672F\uFF1A\u9AA8\u9ABC\u52A8\u753B\uFF08DragonBones\uFF09\u3002\n" + "3. \u5176\u4ED6\uFF1A\u6027\u80FD\u4F18\u5316\uFF0C\u9879\u76EE\u81EA\u52A8\u5316\u96C6\u6210\uFF0C\u4EE3\u7801\u6DF7\u6DC6\uFF0C\u7EBF\u4E0A\u9519\u8BEF\u6536\u96C6\u548C\u6392\u67E5\u3002\u4E3B\u8981\u6280\u672F\uFF1Ajenkins\uFF0Cshell\uFF0Cpython\uFF0Cruby\uFF0Cmysql"
 }];
@@ -1227,20 +2022,16 @@ exports.education = [{
     name: "\u5E7F\u897F\u67F3\u5DDE\u5E02\u94C1\u8DEF\u7B2C\u4E00\u4E2D\u5B66"
 }, {
     time: "2000\u5E7409\u6708 - 2004\u5E7406\u6708",
-    name: "\u4E2D\u5357\u5927\u5B66 \u8BA1\u7B97\u673A\u79D1\u5B66\u4E0E\u6280\u672F\u4E13\u4E1A \u672C\u79D1 \u5B66\u58EB\u5B66\u4F4D"
+    name: "\u4E2D\u5357\u5927\u5B66 \u8BA1\u7B97\u673A\u79D1\u5B66\u4E0E\u6280\u672F\u4E13\u4E1A(\u5168\u65E5\u5236\uFF0C\u5B66\u5386\u53EF\u67E5) \u672C\u79D1 \u5B66\u58EB\u5B66\u4F4D"
 }];
 exports.tech = [{
     bg: es6,
     name: "es6",
     width: 90
 }, {
-    bg: webpack,
-    name: "webpack",
-    width: 80
-}, {
     bg: react,
     name: "react",
-    width: 80
+    width: 90
 }, {
     bg: redux,
     name: "redux",
@@ -1249,6 +2040,10 @@ exports.tech = [{
     bg: css3,
     name: "css3",
     width: 75
+}, {
+    bg: webpack,
+    name: "webpack",
+    width: 80
 }, {
     bg: styled,
     name: "styled-components",
@@ -1269,14 +2064,17 @@ exports.subTech = [{
 }, {
     category: "\u670D\u52A1\u5668",
     tech: [{
-        bg: shell,
-        name: "shell"
-    }, {
         bg: ubuntu,
         name: "ubuntu"
     }, {
+        bg: shell,
+        name: "shell"
+    }, {
         bg: docker,
-        name: "docker "
+        name: "docker"
+    }, {
+        bg: aws,
+        name: "\u4E91\u670D\u52A1\u5668"
     }]
 }, {
     category: "\u5176\u4ED6\u8BED\u8A00",
@@ -1287,7 +2085,28 @@ exports.subTech = [{
         bg: ts,
         name: "TypeScript"
     }]
+}, {
+    category: "\u5176\u4ED6\u6280\u672F",
+    tech: [{
+        bg: git,
+        name: "git"
+    }, {
+        bg: mysql,
+        name: "mysql"
+    }]
 }];
+
+/***/ }),
+
+/***/ "rC5b":
+/*!***********************************!*\
+  !*** ./src/assets/vita/mysql.png ***!
+  \***********************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports) {
+
+module.exports = "data:image/png;base64,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"
 
 /***/ }),
 
@@ -1303,6 +2122,20 @@ module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJ
 
 /***/ }),
 
+/***/ "siL1":
+/*!*******************************************************************!*\
+  !*** ./src/note/ThePragmaticProgrammer/ThePragmaticProgrammer.md ***!
+  \*******************************************************************/
+/*! exports provided: default */
+/*! ModuleConcatenation bailout: Module is referenced from these modules with unsupported syntax: ./src/note/ThePragmaticProgrammer/index.tsx (referenced with cjs require) */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("# 注重实效的程序员 之 快速参考指南\n\n1.关心你的技艺\n\n> Care About Your Craft\\\n> 如果你不在乎能否漂亮地开发出软件，你又为何要耗费生命去开发软件呢？\n\n2.思考！你的工作\n\n> Think! About Your Work\\\n> 关掉自动驾驶仪，接管操作。不断地批评和评估你的工作。\n\n3.提供各种选择，不要找蹩脚的借口\n\n> Provide Options, Don't Make Lame Excuses\\\n> 要提供各种选择，而不是找借口。不要说事情做不到；说明能够做什么。\n\n4.不要容忍破窗效应\n\n> Don't Live with Broken Windows\\\n> 当你看到糟糕的设计、错误的决策和糟糕的代码时，修正它们。\n\n5.做变化的催化剂\n\n> Be a Catalyst for Change\\\n> 你不能强迫人们改变。相反，要向他们展示未来可能会怎样，并帮助他们参与对未来的创造。\n\n6.记住大图景\n\n> Remember the Big Picture\\\n> 不要太过专注于细节，以致忘了查看你周围正在发生什么\n\n7.使质量成为需求问题\n\n> Make Quality a Requirements Issue\\\n> 让你的用户参与确定项目真正的质量需求。\n\n8.定期为你的知识资产投资\n\n> Invest Regularly in Your Knowledge Portfolio\\\n> 让学习成为习惯。\n\n9.批判的分析你读到的和听到的\n\n> Critically Analyze What You Read and Hear\\\n> 不要被供应商、媒体炒作、或教条左右。要依照你自己的看法和你的项目的情况去对信息进行分析。\n\n10.你说什么和你怎么说同样重要\n\n> It's Both What You Say and the Way You Say It\\\n> 如果你不能有效地向他人传达你的了不起的想法，这些想法就毫无用处。\n\n11.不要重复你自己 DRY\n\n> Don't Repeat Yourself\\\n> 系统中的每一项知识都必须具有单一、无歧义、权威的表示。\n\n12.让复用变得容易\n\n> Make It Easy to Reuse\\\n> 如果复用很容易，人们就会去复用。创造一个支持复用的环境。\n\n13.消除无关事务之间的影响\n\n> Eliminate Effects Between Unrelated Things\\\n> 设计自足、独立、并具有单一、良好定义的目的的组件。\n\n14.不存在最终决策\n\n> There Are No Final Decisions\\\n> 没有决策是浇铸在石头上的。相反，要把每项决策都视为是写在沙滩上的，并为变化做好计划。\n\n15.用曳光弹找到目标\n\n> Use Tracer Bullets to Find the Target\\\n> 曳光弹能通过试验各种事物并检查它们离目标有多远来让你追踪目标。\n\n16.为了学习而制作原型\n\n> Prototype to Learn\\\n> 原型制作是一种学习经验。其价值并不在于所产生的代码，而在于所学到的经验教训。\n\n17.靠近问题领域编程\n\n> Program Close to the Problem domain\\\n> 用你的用户的语言进行设计和编码。\n\n18.估算，以避免意外发生\n\n> Estimate to Avoid Surprises\\\n> 在着手之前先进行估算。你将提前发现潜在的问题。\n\n19.通过代码对进度表进行迭代\n\n> Iterate the Schedule with the Code\\\n> 用你在进行实现时获得的经验提炼项目的时间标度。\n\n20.用纯文本保存知识\n\n> Keep Knowledge in Plain Text\\\n> 纯文本不会过时。它能够帮助你有效利用你的工作，并简化调试和测试。\n\n21.利用命令 shell 的力量\n\n> Use the Power of Command Shells\\\n> 当图形用户界面无能为力时使用 shell0\n\n22.用好一种编辑器\n\n> Use a Single Editor Well\\\n> 编辑器应该是你的手的延伸；确保你的编辑器是可配置、可扩展和可编程的。\n\n23.总是使用源码控制\n\n> Always Use Source Code Control\\\n> 源码控制是你的工作的时间机器―你能够回到过去。\n\n24.要修正问题，而不是发出指责\n\n> Fix the Problem, Not the Blame bug\\\n> 是你的过错还是别人的过错， 修正。\n\n25.不要恐慌\n\n> Don't Panic When Debuging\\\n> 做一次深呼吸，思考什么可能是 bug 的原因。\n\n26.”select“没有问题\n\n> \"Select\" Isn't Broken\\\n> 在 OS 或编译器、甚或是第三方产品或库中很少发现 bug; bug 很可能在应用中。\n\n27.不要假定，要证明\n\n> Don't Assume It 一 Prove It\\\n> 在实际环境中一州吏用真正的数据和边界条件―证明你的假定。\n\n28.学习一种文本操纵语言\n\n> Learn a Text Manipulation Language\\\n> 你用每天的很大一部分时间处理文本，为什么不让计算机替你完成部分工作呢？\n\n29.编写能编写代码的代码\n\n> Write Code That Writes Code\\\n> 代码生成器能提高你的生产率，并有助于避免重复。\n\n30.你不可能写出完美的软件\n\n> You Can't Write Perfect Software\\\n> 软件不可能完美。保护你的代码和用户，使它（他）们免于能够预见的错误。\n\n31.通过合约进行设计\n\n> Design with Contracts\\\n> 使用合约建立文档，并检验代码所做的事情正好是它声明要做的。\n\n32.早崩溃\n\n> Crash Early\\\n> 死程序造成的危害通常比有问题的程序要小得多。\n\n33.用断言避免不可能发生的事情\n\n> Use Assertions to Prevent the Impossible\\\n> 断言验证你的各种假定。在一个不确定的世界里，用断言保护你的代码。\n\n34.将异常用于异常的问题\n\n> Use Exceptions for Exceptional Problems\\\n> 异常可能会遭受经典的意大利面条式代码的所有可读性和可维护性问题的折磨。将异常保留给异常的事物。\n\n35.要有始有终\n\n> Finish What You Start\\\n> 只要可能，分配某资源的例程或对象也应该负责解除其分配。\n\n36.使模块之间的耦合减至最少\n\n> Minimize Coupling Between Modules\\\n> 通过编写“羞怯的”代码并应用得墨武耳法则来避免藕合。\n\n37.要配置，不要集成\n\n> configure,Don't Integrate\\\n> 要将应用的各种技术选择实现为配置选项，而不是通过集成或工程方法实现。\n\n38.将抽象放进代码，细节放进元数据\n\n> Put Abstractions in Code, Details in Metadata\\\n> 为一般情况编程，将细节放在被编译的代码库之外。\n\n39.分析工作流，以改善并发性\n\n> Analyze Workflow to Improve Concurrency\\\n> 利用你的用户的工作流中的并发性。\n\n40.用服务进行设计\n\n> Design Using Services\\\n> 根据服务―独立的、在良好定义、一致的接口之后的并发对象―进行设计。\n\n41.总是为并发进行设计\n\n> Always Design for Concurrency\\\n> 容许并发，你将会设计出更整洁、具有更少假定的接口。\n\n42.使视图与模型分离\n\n> Separate Views from Models\\\n> 要根据模型和视图设计你的应用，从而以低廉的代码获取灵活性。\n\n43.用黑板协调工作流\n\n> Use Blackboards to Coordinate Workflow\\\n> 用黑板协调完全不同的事实和因素，同时又使各参与方保持独立和隔离。\n\n44.不要靠巧合编程\n\n> Don't Program by Coincidence\\\n> 只依靠可靠的事物。注意偶发的复杂性，不要把幸运的巧合与有目的的计划混为一谈。\n\n45.估算你的算法的阶\n\n> Estimate the Order of Your Algorithms\\\n> 在你编写代码之前，先大致估算事情需要多长时间。\n\n46.测试你的估算\n\n> Test Your Estimates\\\n> 对算法的数学分析并不会告诉你每一件事情。在你的代码的目标环境中测定它的速度。\n\n47.早重构，常重构\n\n> Ref actor Early, Refactor Often\\\n> 就和你会在花园里除草、并重新布置一样，在需要时对代码进行重写、重做和重新架构。要铲除问题的根源。\n\n48.为测试而设计\n\n> Design to Test\\\n> 在你还没有编写代码时就开始思考测试问题。\n\n49.测试你的软件，否则你的用户就得测试\n\n> Test Your Software, or Your Users Will\\\n> 无情地测试。不要让你的用户为你查找 bug。\n\n50.不要使用你不理解的向导代码\n\n> Don't Use Wizard Code You Don't Understand\n> 向导可以生成大量代码。在你把它们合并进你的项目之前，确保你理解全部这些代码。\n\n51.不要搜集需求--挖掘它们\n\n> Don't Gather Requirements 一 Dig for Them\\\n> 需求很少存在于表面上。它们深深地埋藏在层层假定、误解和政治手段的下面。\n\n52.与用户一同工作，以像用户一样思考\n\n> Work with a User to Think Like a User\\\n> 要了解系统实际上将如何被使用，这是最好的方法。\n\n53.抽象比细节活得更长久\n\n> Abstractions Live Longer than Details\\\n> “投资”于抽象，而不是实现。抽象能在来自不同的实现和新技术的变化的\n> “攻击”之下存活下去。\n\n54.使用项目词汇表\n\n> Use a Project Glossary\\\n> 创建并维护项目中使用的专用术语和词汇的单一信息源。\n\n55.不要在盒子外面思考--要找到盒子\n\n> Don't Think Outside the Box 一 Find the Box\n> 在遇到不可能解决的问题时，要确定真正的约束。问问你自己：\"它必须以这种方式完成吗，它真的必须完成吗？\"\n\n56.等你准备好再开始\n\n> Start When You're Ready\\\n> 你的一生都在积累经验。不要忽视反复出现的疑虑。\n\n57.对有些事情“做”胜于“描述”\n\n> Some Things Are Better Done than Described\\\n> 不要掉进规范的螺旋--在某个时刻，你需要开始编码。\n\n58.不要做形式方法的奴隶\n\n> Don't Be a Slave to Formal Methods\\\n> 如果你没有把某项技术放进你的开发实践和能力的语境中，不要盲目地采用它。\n\n59.昂贵的工具不一定能制作出更好的设计\n\n> Costly Tools Don't Produce Better Designs\\\n> 小心供应商的炒作，行业教条、以及价格标签的诱惑。要根据工具的价值判断它们。\n\n60.围绕功能组织团队\n\n> Organize Teams Around Functionality\\\n> 不要把设计师与编码员分开，也不要把测试员与数据建模员分开。 按照你构建代码的方式构 建团队。\n\n61.不要使用手工流程\n\n> Don't Use Manual Procedures\\\n> shell 脚本或批文件会一次次地以同一顺序执行同样的指令。\n\n62.早测试，常测试，自动测试。\n\n> Test Early. Test Often. Test Automatically\\\n> 与呆在书架上的测试计划相比，每次构建时运行的测试要有效得多。\n\n63.要到通过全部测试，编码才算完成\n\n> Coding Ain't Done' Til All the Tests Run\\\n> 就是这样。\n\n64.通过“蓄意破坏”测试你的测试\n\n> Use Saboteurs to Test Your Testing\\\n> 在单独的软件副本上故意引人 bug，以检验测试能够抓住它们。\n\n65.测试状态覆盖，而不是代码覆盖\n\n> Test State Coverage, Not Code Coverage\\\n> 确定并测试重要的程序状态。只是测试代码行是不够的。\n\n66.一个 bug 只抓一次\n\n> Find Bugs Once\\\n> 一旦测试员找到一个 bug,这应该是测试员最后一次找到它。此后自动测试应该对其进行检查。\n\n67.英语就是一种编程语言\n\n> English is Just a Programming Language\\\n> 像你编写代码一样编写文档：遵守 DRY 原则、使用元数据、MVC、自动生成，等等。\n\n68.把文档建在里面，不要拴在外面\n\n> Build Documentation In, Don't Bolt It On\\\n> 与代码分离的文档不太可能被修正和更新。\n\n69.温和地超出用户的期望\n\n> Gently Exceed Your Users' Expectations\\\n> 要理解你的用户的期望，然后给他们的东西要多那么一点。\n\n70.在你的作品上签名\n\n> Sign Your Work\\\n> 过去时代的手艺人为能在他们的作品上签名而自豪。你也应该如此。\n\n# 检查清单\n\n71.要学习的语言\n\n> 厌倦了 Cs C+＋和 JAVA？试试 CLOS、Dylan、 Eiffel、Objective C、Prolog、Smalitalk 或 TOM。它们每一种都有不同的能力和不同的“风味”。用其中的一种或多种语言在家里开发一个小项目。\n\n72.WISDOM 离合诗\n\n> What do you want them to learn? \\\n> 你想让他们学到什么？\\\n> What is their interest in what you've got to say? \\\n> 他们对你讲的什么感兴趣？\\\n> How sophisticated are they? \\\n> 他们有多富有经验？\\\n> How much detail do they want?\\\n> 他们想要多少细节？\\\n> Whom do you want to own the information?\\\n> 你想要让谁拥有这些信息？\\\n> How can you motivate them to listen to you?\\\n> 你如何促使他们听你说话？\\\n\n73．怎样维持正交性\n\n- 设计独立、良好定义的组件。\n- 使你的代码保持解藕。\n- 避免使用全局数据。\n- 重构相似的函数。\n\n74．应制作原型的事物\n\n- 架构\n- 已有系统中的新功能\n- 外部数据的结构或内容\n- 第三方工具或组件\n- 性能问题\n- 用户界面设计\n\n75．架构问题\n\n- 责任是否得到了良好定义？\n- 协作是否得到了良好定义？\n- 隅合是否得以最小化？\n- 你能否确定潜在的重复？\n- 接口定义和各项约束是否可接受？\n- 模块能否在需要时访问所需数据？\n\n76．调试检查清单\n\n- 正在报告的问题是底层 bug 的直接结果，还是只是症状？\n- bug 真的在编译器里？在 Os 里？或者是在你的代码里？\n- 如果你向同事详细解释这个问题，你会说什么？\n- 如果可疑代码通过了单元测试，测试是否足够完整？如果你用该数据运行单元测试，会发生 什么？\n- 造成这个 bug 的条件是否存在于系统中的其他任何地方？\n\n77．函数的得墨式耳法则\\\n 某个对象的方法应该只调用属于以下情形的方法：\n\n- 它自身\n- 传入的任何参数\n- 它创建的对象\n- 组件件对象\n\n78．怎样深思熟虑地编程\n\n- 总足意识到你在做什么\n- 不要盲目地编程\n- 按照计划行事\n- 依靠可靠的事物\n- 为你的假定建立文档\n- 不要只是测试你的代码，还要测试你的假定。\n- 为你的工作划分优先级。\n- 不要做历史的奴隶。\n\n79．何时进行重构\n\n- 你发现了对 DRY 原则的违反。\n- 你发现事物可以更为正交。\n- 你的知识扩展了。\n- 需求演变了。\n- 你需要改善性能。\n\n80．劈开戈尔迪斯结\\\n 在解决不可能解决的问题时，问问你自己：\n\n- 有更容易的方法吗？\n- 我是在解决正确的问题吗？\n- 这件事情为什么是一个问题？\n- 是什么使它如此难以解决？\n- 它必须以这种方式完成吗？它真的必须完成吗？\n\n81．测试的各个方面\n\n- 单元测试\n- 集成测试\n- 验证和校验\n- 资源耗尽、错误及恢复\n- 性能测试\n- 可用性测试\n- 对测试自身进行测试\n");
+
+/***/ }),
+
 /***/ "ttTx":
 /*!*********************************!*\
   !*** ./src/assets/vita/npm.png ***!
@@ -1312,6 +2145,168 @@ module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJ
 /***/ (function(module, exports) {
 
 module.exports = "data:image/png;base64,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"
+
+/***/ }),
+
+/***/ "ufyq":
+/*!*****************************************!*\
+  !*** ./src/container/CSSPage/shape.tsx ***!
+  \*****************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var React = __webpack_require__(/*! react */ "q1tI");
+var style_1 = __webpack_require__(/*! ./style */ "a00I");
+function shape() {
+  return React.createElement(
+    style_1.ShapeBg,
+    null,
+    React.createElement(style_1.QuarterEllipse1, null),
+    React.createElement(style_1.QuarterEllipse2, null),
+    React.createElement(style_1.QuarterEllipse3, null),
+    React.createElement(style_1.QuarterEllipse4, null),
+    React.createElement(
+      style_1.Parallelograms,
+      null,
+      "\u5E73\u884C\u56DB\u8FB9\u5F62"
+    ),
+    React.createElement(
+      style_1.DiamondImagesViaClipPath,
+      null,
+      "\u83F1\u5F62"
+    ),
+    React.createElement(
+      style_1.BeveledCorners,
+      null,
+      "Hey, focus! You\u2019re supposed to be looking at my corners, not reading my text. The text is just placeholder!"
+    ),
+    React.createElement(
+      style_1.ScoopCorners,
+      null,
+      "Hey, focus! You\u2019re supposed to be looking at my corners, not reading my text. The text is just placeholder!"
+    ),
+    React.createElement(style_1.Pie, null)
+  );
+}
+shape.displayName = "shape";
+exports.default = shape;
+
+/***/ }),
+
+/***/ "vFEi":
+/*!*****************************************!*\
+  !*** ./src/container/CSSPage/index.tsx ***!
+  \*****************************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var React = __webpack_require__(/*! react */ "q1tI");
+var style_1 = __webpack_require__(/*! ./style */ "a00I");
+var borderAndBackground_1 = __webpack_require__(/*! ./borderAndBackground */ "aJac");
+var shape_1 = __webpack_require__(/*! ./shape */ "ufyq");
+var animation_1 = __webpack_require__(/*! ./animation */ "Zfwi");
+/**
+ * 整理css读书笔记用
+ */
+function CSSPage() {
+  return React.createElement(
+    style_1.Background,
+    null,
+    React.createElement(
+      style_1.Layout,
+      null,
+      React.createElement(
+        style_1.Head,
+        null,
+        "css2 css3"
+      ),
+      React.createElement(
+        style_1.Body,
+        null,
+        animation_1.default(),
+        shape_1.default(),
+        borderAndBackground_1.default(),
+        React.createElement(
+          "div",
+          null,
+          "----------------------------------------------------"
+        ),
+        React.createElement(
+          style_1.Border2,
+          null,
+          "border2"
+        ),
+        React.createElement(
+          style_1.Cursor,
+          null,
+          "cursor"
+        ),
+        React.createElement(
+          style_1.Font,
+          null,
+          "font"
+        ),
+        React.createElement(
+          style_1.List,
+          null,
+          React.createElement(
+            "ul",
+            null,
+            React.createElement(
+              "li",
+              null,
+              "li1"
+            ),
+            React.createElement(
+              "li",
+              null,
+              "li2"
+            ),
+            React.createElement(
+              "li",
+              null,
+              "li3"
+            ),
+            React.createElement(
+              "li",
+              null,
+              "li4"
+            )
+          )
+        ),
+        React.createElement(
+          style_1.Padding,
+          null,
+          React.createElement(style_1.Margin, null)
+        )
+      )
+    )
+  );
+}
+CSSPage.displayName = "CSSPage";
+exports.default = CSSPage;
+
+/***/ }),
+
+/***/ "vQZ7":
+/*!*********************************!*\
+  !*** ./src/assets/vita/git.png ***!
+  \*********************************/
+/*! no static exports found */
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+/***/ (function(module, exports) {
+
+module.exports = "data:image/png;base64,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"
 
 /***/ }),
 
@@ -1345,7 +2340,7 @@ var github = __webpack_require__(/*! ../../assets/vita/github.png */ "nLtH");
 exports.Background = styled_components_1.default.div.withConfig({
   displayName: "style__Background",
   componentId: "sc-6w2vu6-0"
-})(["background:rgba(30,30,30,1);display:flex;justify-content:center;font-family:PingFangSC-Semibold;font-size:0.18rem;height:100%;overflow-y:auto;"]);
+})(["background:rgba(30,30,30,1);display:flex;justify-content:center;font-family:PingFangSC-Semibold;font-size:0.18rem;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;"]);
 exports.Layout = styled_components_1.default.div.withConfig({
   displayName: "style__Layout",
   componentId: "sc-6w2vu6-1"
@@ -1449,11 +2444,11 @@ exports.Content = styled_components_1.default.div.withConfig({
 exports.Progress = styled_components_1.default.div.withConfig({
   displayName: "style__Progress",
   componentId: "sc-6w2vu6-26"
-})(["overflow:hidden;background-color:#f7f7f7;background-repeat:repeat-x;box-shadow:inset 0 0.01rem 0.04rem rgba(0,0,0,0.1);border-radius:0.08rem;height:0.1rem;width:2.5rem;margin-left:0.04rem;margin-top:0.04rem;"]);
+})(["overflow:hidden;background-color:#f7f7f7;background-repeat:repeat-x;box-shadow:inset 0 0.01rem 0.04rem rgba(0,0,0,0.1);border-radius:0.1rem;height:0.18rem;width:75%;margin-left:0.04rem;margin-top:0.04rem;"]);
 exports.Bar = styled_components_1.default.div.withConfig({
   displayName: "style__Bar",
   componentId: "sc-6w2vu6-27"
-})(["width:", "%;height:100%;color:#ffffff;float:left;border-radius:0.08rem;background-repeat:repeat-x;background-image:linear-gradient(90deg,#ffee66 0%,#ff9933 100%);"], function (props) {
+})(["width:", "%;height:100%;color:#fff;float:left;border-radius:0.08rem;background-repeat:repeat-x;background-image:linear-gradient(90deg,#ffee66 0%,#ff9933 100%);"], function (props) {
   return props.width;
 });
 exports.Icon = styled_components_1.default.div.withConfig({
@@ -1462,6 +2457,10 @@ exports.Icon = styled_components_1.default.div.withConfig({
 })(["background:url(", ") center top/0.4rem 0.4rem no-repeat;width:0.8rem;height:0.6rem;padding:0.4rem 0 0 0;line-height:0.18rem;text-align:center;"], function (props) {
   return props.bg;
 });
+exports.Foot = styled_components_1.default.div.withConfig({
+  displayName: "style__Foot",
+  componentId: "sc-6w2vu6-29"
+})(["background:#fff;text-align:center;height:0.4rem;margin:0;color:#aaa;border-top:1px solid transparent;border-color:#aaa;"]);
 
 /***/ }),
 
